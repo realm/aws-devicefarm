@@ -1,0 +1,29 @@
+name: 'Create upload'
+description: 'Create an upload to a devicefarm project'
+inputs:
+  project_arn:
+    description: 'ARN of an existing device farm project'
+    required: true
+  type:
+    description: 'Type of the file to upload'
+    required: true
+  name:
+    description: 'Name of the file to upload'
+    required: true
+  cleanup:
+    description: 'Remove uploads before exiting'
+    required: true
+    default: true
+outputs:
+  data:
+    description: 'JSON data returned from the API'
+  arn:
+    description: 'The ARN of the newly created upload'
+  url:
+    description: 'The URL of the newly created upload'
+  status:
+    description: 'The status of the newly created upload'
+runs:
+  using: 'node12'
+  main: 'index.js'
+  post: 'cleanup.js'

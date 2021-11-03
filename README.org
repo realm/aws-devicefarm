@@ -1,0 +1,474 @@
+* AWS devicefarm                                                      :TOC_4:
+  - [[#introduction][Introduction]]
+  - [[#available-actions][Available actions]]
+    - [[#api-wrappers][API wrappers]]
+      - [[#create-upload][create-upload]]
+      - [[#delete-upload][delete-upload]]
+      - [[#get-device-pool][get-device-pool]]
+      - [[#get-project][get-project]]
+      - [[#get-run][get-run]]
+      - [[#get-upload][get-upload]]
+      - [[#list-artifacts][list-artifacts]]
+      - [[#list-device-pools][list-device-pools]]
+      - [[#list-runs][list-runs]]
+      - [[#list-uploads][list-uploads]]
+      - [[#schedule-run][schedule-run]]
+    - [[#complex-actions][Complex actions]]
+      - [[#upload-file][upload-file]]
+      - [[#test-application][test-application]]
+  - [[#setting-up-aws][Setting up AWS]]
+    - [[#create-a-test-project][Create a test project]]
+  - [[#development][Development]]
+    - [[#local-testing][Local testing]]
+
+** Introduction
+This repository provides actions to interact with AWS devicefarms, implemented using the [[https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DeviceFarm.html][AWS JavaScript SDK.]] AWS credentials need to be configured using the [[https://github.com/aws-actions/configure-aws-credentials][configure AWS credentials action]].
+
+Due to the nature of the application this was developed for the following restrictions apply for now:
+
+1. The application contains the test definitions in the application binary. As AWS always expects a separate test definition a dummy test definition is provided in =sample-venv/tests=. Applications wanting to use the AWS testdefinitions should still work without problem, as long as the correct files are uploaded / correct ARNs specified. This has not been tested, though.
+2. Test results are evaluated on Github side based on files pulled from the device. Support for tests/suites an AWS is not implemented. Adding support for those APIs should be trivial, if needed. Patches are welcome.
+
+Two types of actions are provided: Simple API wrappers - useful for debugging, testing or building workflows otherwise not properly supported - and complex actions, wrapping several API calls. Typically complex actions should be used, whenever possible.
+
+After adding secrets for AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEVICE_POOL_ARN and AWS_PROJECT_ARN (see AWS setup section below if no devicefarm is configured) the following workflow will create a test run with a mix of downloaded and local data, and wait for it to execute. Adjust =app_file=, =test_spec_file= and =test_package_file= before running it:
+
+#+BEGIN_SRC
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+name: Test application on device farm
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-west-2
+
+    - name: Schedule test run with mixed data
+      uses: aardsoft/aws-devicefarm/test-application@master
+      with:
+        name: schedule-run
+        project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+        device_pool_arn: ${{ secrets.AWS_DEVICE_POOL_ARN }}
+        app_file: test_app_local.apk
+        app_type: ANDROID_APP
+        test_type: APPIUM_PYTHON
+        test_package_file: https://example.com/test_bundle.zip
+        test_package_type: APPIUM_PYTHON_TEST_PACKAGE
+        test_spec_file: https://example.com/test_spec.yaml
+        test_spec_type: APPIUM_PYTHON_TEST_SPEC
+        remote_src: true
+#+END_SRC
+
+** Available actions
+*** API wrappers
+The following actions are just wrappers around the [[https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DeviceFarm.html][JavaScript SDK]]. In addition to the JSON returned by the API they also return the JSON fields most likely to be useful for later calls - saving some JSON parsing compared to building actions on top of the AWS CLI. For each action documentation links to both the API and the matching call in AWS CLI are provided - with the latter typically being the more useful when building a workflow on top of those actions without trying to touch the JavaScript.
+
+**** create-upload
+Create an upload for a file named =name=, of type =type=, in the project specified by =project_arn=. Note that a file needs to be uploaded to the URL from the result in a second step - for an action handling the upload as well check =upload-file=.
+
+***** inputs
+- project_arn (string): the ARN of an existing device farm project.
+- type (string): the type of the file to upload. See the CLI documentation for available values.
+- name (string): name of the file to upload. This is not a local file, but a file name (without path) on AWS.
+- cleanup (bool, optional, default: true): delete uploads in the cleanup handler. Set this to =false= to keep uploads.
+
+***** outputs
+- data (JSON): raw result returned by the API.
+- arn (string): the ARN of the newly created upload.
+- url (string): the pre-signed URL for PUTing the file contents to.
+- status (string): the status of the upload. Starts with =INITIALIZED=, and should change to =SUCCEEDED= after uploading the file. Check with =get-upload=.
+
+***** documentation
+- [[https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DeviceFarm.html#createUpload-property][API]]
+- [[https://docs.aws.amazon.com/cli/latest/reference/devicefarm/create-upload.html][CLI]]
+
+***** usage example
+#+BEGIN_SRC yaml
+- name: Create upload
+  uses: aardsoft/aws-devicefarm/create-upload@v1
+  id: create-upload
+  with:
+    project_arn: arn:aws:devicefarm:us-west-2:123456789101:project:EXAMPLE-GUID-123-456
+    name: test.yaml
+    type: APPIUM_PYTHON_TEST_SPEC
+#+END_SRC
+
+A step similar to the following could be used to upload the actual file:
+
+#+BEGIN_SRC yaml
+- name: Upload file
+  run: |
+    curl -T /path/to/local/file '${{ steps.create-upload.outputs.url }}'
+#+END_SRC
+
+The status of the upload should be checked afterwards with =get-upload=, possibly in a loop until the status changes.
+
+**** delete-upload
+Deletes a resource uploaded to a devicefarm project, specified by =resource_arn=.
+
+***** inputs
+- resource_arn (string): the ARN of the resource to delete.
+
+***** outputs
+This method does not return data, and completes successfully even if the resource requested for deletion does not exist.
+
+***** documentation
+- [[https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DeviceFarm.html#deleteUpload-property][API]]
+- [[https://docs.aws.amazon.com/cli/latest/reference/devicefarm/delete-upload.html][CLI]]
+
+***** usage example
+#+BEGIN_SRC yaml
+- name: Delete upload
+  uses: aardsoft/aws-devicefarm/delete-upload@v1
+  id: delete-upload
+  with:
+    resource_arn: arn:aws:devicefarm:us-west-2:123456789101:project:EXAMPLE-GUID-123-456
+#+END_SRC
+
+**** get-device-pool
+Get information about a specific device pool.
+
+***** inputs
+- device_pool_arn (string): the ARN of the device pool.
+
+***** outputs
+- data (JSON): raw result returned by the API.
+- name (string): the pool name.
+- description (string): the pool description.
+- type (string): the pool type, =CURATED= or =PRIVATE=
+
+***** documentation
+- [[https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DeviceFarm.html#getDevicePool-property][API]]
+- [[https://docs.aws.amazon.com/cli/latest/reference/devicefarm/get-device-pool.html][CLI]]
+
+***** usage example
+#+BEGIN_SRC yaml
+- name: Get device pool details
+  uses: aardsoft/aws-devicefarm/get-device-pool@v1
+  with:
+    device_pool_arn: arn:aws:devicefarm:us-west-2:123456789101:devicepool:EXAMPLE-GUID-123-456
+#+END_SRC
+
+**** get-project
+Return details of the given project.
+
+***** inputs
+- project_arn (string): the ARN of the device farm project.
+
+***** outputs
+- data (JSON): raw result returned by the API.
+- name (string): the project name.
+- created (date): date the project was create.
+
+***** documentation
+- [[https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DeviceFarm.html#getProject-property][API]]
+- [[https://docs.aws.amazon.com/cli/latest/reference/devicefarm/get-project.html][CLI]]
+
+***** usage example
+#+BEGIN_SRC yaml
+- name: Get project
+  uses: aardsoft/aws-devicefarm/get-project@v1
+  id: get-project
+  with:
+    project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+#+END_SRC
+
+**** get-run
+Return details for a specific test run.
+
+***** inputs
+- run_arn (string): the ARN of the run to request details for.
+
+***** outputs
+- data (JSON): raw result returned by the API.
+- created (string): creation timestamp for the resource.
+- message (string): additional message about run results.
+- name (string): the name of the run.
+- parsing_result_url (string): the URL containing parsing errors, if any.
+- platform (string): hte platform the run was executed on.
+- result (string): result of the test run.
+- result_code (string): supporting field for =result=.
+- status (string): status of the test run.
+- type (string): the type of this upload.
+
+***** documentation
+- [[https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DeviceFarm.html#getRun-property][API]]
+- [[https://docs.aws.amazon.com/cli/latest/reference/devicefarm/get-run.html][CLI]]
+
+***** usage example
+Typically the ARN is obtained from an earlier step:
+
+#+BEGIN_SRC yaml
+- name: Get run details
+  uses: aardsoft/aws-devicefarm/get-run@v1
+  with:
+    run_arn: ${{ steps.schedule-run.outputs.arn }}
+#+END_SRC
+
+**** get-upload
+Return details for the upload specified by =resource_arn=.
+
+***** inputs
+- resource_arn (string): the ARN of the resource to request details for.
+
+***** outputs
+- data (JSON): raw result returned by the API.
+- created (string): creation timestamp for the resource.
+- metadata (string): additional metadata extracted from an uploaded file.
+- type (string): the type of this upload.
+- status (string): the status of this upload.
+
+***** documentation
+- [[https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DeviceFarm.html#getUpload-property][API]]
+- [[https://docs.aws.amazon.com/cli/latest/reference/devicefarm/get-upload.html][CLI]]
+
+***** usage example
+#+BEGIN_SRC yaml
+- name: Get upload details
+  uses: aardsoft/aws-devicefarm/get-upload@v1
+  with:
+    resource_arn: arn:aws:devicefarm:us-west-2:123456789101:upload:EXAMPLE-GUID-123-456
+#+END_SRC
+
+**** list-artifacts
+List artifacts for a resource. Note that you can only list one artifact type at one time, and can't query specific artifact names. To retrieve a specific artifact loop over the returned array, check for artifact names, and GET the included URL to retrieve the artifact.
+
+***** inputs
+- resource_arn (string): the ARN of the resource to list artifacts for.
+- type (string): the type of artifacts to list. Valid options are =FILE=, =LOG= and =SCREENSHOT=.
+
+***** outputs
+- data (JSON): raw result returned by the API.
+
+***** documentation
+- [[https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DeviceFarm.html#listArtifacts-property][API]]
+- [[https://docs.aws.amazon.com/cli/latest/reference/devicefarm/list-artifacts.html][CLI]]
+
+***** usage example
+#+BEGIN_SRC
+- name: List file artifacts for run
+  uses: aardsoft/aws-devicefarm/list-artifacts@v1
+  with:
+    resource_arn: ${{ steps.schedule-run.outputs.arn }}
+    type: FILE
+#+END_SRC
+
+**** list-device-pools
+Return a list of device pools configured for the specified project.
+
+***** inputs
+- project_arn (string): the ARN of the device farm project.
+- type (string, optional): the type of the pool to list. Valid options are =PRIVATE= or =CURATED=, defaulting to =PRIVATE=.
+
+***** outputs
+- data (JSON): raw result returned by the API.
+
+***** documentation
+- [[https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DeviceFarm.html#listDevicePools-property][API]]
+- [[https://docs.aws.amazon.com/cli/latest/reference/devicefarm/list-device-pools.html][CLI]]
+
+***** usage example
+#+BEGIN_SRC yaml
+- name: List device pools
+  uses: aardsoft/aws-devicefarm/list-device-pools@v1
+  id: list-device-pools
+  with:
+    project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+#+END_SRC
+
+**** list-runs
+List test runs in the specified device farm project.
+
+***** inputs
+- project_arn (string): the ARN of the device farm project.
+
+***** outputs
+- data (JSON): raw result returned by the API.
+
+***** documentation
+- [[https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DeviceFarm.html#listRuns-property][API]]
+- [[https://docs.aws.amazon.com/cli/latest/reference/devicefarm/list-runs.html][CLI]]
+
+***** usage example
+#+BEGIN_SRC yaml
+- name: List runs
+  uses: aardsoft/aws-devicefarm/list-runs@v1
+  with:
+    project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+#+END_SRC
+
+**** list-uploads
+Return all uploads in the project specified by =project_arn= as a JSON string.
+
+***** inputs
+- project_arn (string): the ARN of the device farm project.
+
+***** outputs
+- data (JSON): raw result returned by the API.
+
+***** documentation
+- [[https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DeviceFarm.html#scheduleRun-property][API]]
+- [[https://docs.aws.amazon.com/cli/latest/reference/devicefarm/list-uploads.html][CLI]]
+
+***** usage example
+#+BEGIN_SRC yaml
+- name: List uploads
+  uses: aardsoft/aws-devicefarm/list-uploads@v1
+  id: list-uploads
+  with:
+    project_arn: arn:aws:devicefarm:us-west-2:123456789101:project:EXAMPLE-GUID-123-456
+#+END_SRC
+
+The output can be referenced in following actions using the step ID:
+
+#+BEGIN_SRC yaml
+  with:
+    input: ${{ steps.list-uploads.outputs.data }}
+#+END_SRC
+
+**** schedule-run
+Schedule a test run with resources uploaded to AWS already. This action returns directly after scheduling a run - this behaviour is useful to avoid blocking a workflow if other steps can still be executed, but requires later checking with =get-run= if the run has finished. For an action capable of uploading required files as well as blocking until a test run has finished see =test-application=.
+
+***** inputs
+- name (string, optional): a name used for the test run.
+- project_arn (string): the ARN of the device farm project.
+- device_pool_arn (string): the ARN of the device pool.
+- app_arn (string): the ARN of the uploaded app.
+- test_type (string): the type of the test to execute.
+- test_package_arn (string): the ARN of the uploaded test package.
+- test_spec_arn (string): the ARN of the uploaded test specification.
+
+***** outputs
+- data (JSON): raw result returned by the API.
+- arn (string): the ARN of the scheduled test run.
+- parsing_result_url (string): the URL containing parsing errors, if any. Note that this call may return before the API reports parse errors.
+- status (string): status of the test run. Typically it can be expected to get =SCHEDULING= here.
+- result_code (string): result of the test run. For this call this will typically be empty.
+
+***** documentation
+- [[https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DeviceFarm.html#scheduleRun-property][API]]
+- [[https://docs.aws.amazon.com/cli/latest/reference/devicefarm/schedule-run.html][CLI]]
+
+***** usage example
+This example references ARNs obtained from previous upload steps:
+
+#+BEGIN_SRC yaml
+- name: Schedule a test run
+  uses: aardsoft/aws-devicefarm/schedule-run@v1
+  with:
+    name: schedule_run
+    project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+    device_pool_arn: ${{ secrets.AWS_DEVICE_POOL_ARN }}
+    app_arn: ${{ steps.test-app.outputs.arn }}
+    test_type: APPIUM_PYTHON
+    test_package_arn: ${{ steps.test-bundle.outputs.arn }}
+    test_spec_arn: ${{ steps.test-spec.outputs.arn }}
+#+END_SRC
+
+*** Complex actions
+**** upload-file
+This action creates a file upload and then uploads a file.
+
+***** inputs
+- project_arn (string): the ARN of the device farm project.
+- type (string): the type of the file to upload.
+- name (string, optional): the name of the file to create on AWS. The name of the actual file if missing.
+- file (string): the full path to the file to upload to AWS.
+- cleanup (bool, optional, default: true): delete uploads in the cleanup handler. Set this to =false= to keep uploads.
+- remote_src (bool, optional, default: true): try to retrieve files via http if not available locally.
+
+***** outputs
+- data (JSON): raw result returned by the API.
+- arn (string): the ARN of the newly created upload.
+- url (string): the pre-signed URL for PUTing the file contents to.
+- status (string): the status of the upload. Should be =SUCCEEDED= after passing validation for the specific file type at AWS.
+
+***** usage example
+#+BEGIN_SRC yaml
+- name: Upload remote test bundle
+  uses: aardsoft/aws-devicefarm/upload-file@v1
+  id: test-bundle
+  with:
+    project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+    file: https://aard.fi/dump/test_bundle.zip
+    remote_src: true
+    type: APPIUM_PYTHON_TEST_PACKAGE
+#+END_SRC
+
+**** test-application
+This action schedules a test run and waits for the result. It can either use already uploaded files, or upload local or remote files.
+
+***** inputs
+- name (string, optional): a name used for the test run.
+- project_arn (string): the ARN of the device farm project.
+- device_pool_arn (string): the ARN of the device pool.
+- app_arn (string): the ARN of the uploaded app.
+- app_file (string): the path to an app file. Use either =app_arn= or =app_file=.
+- app_type (string): type of the application file. For Android apps use =ANDROID_APP=.
+- test_type (string): the type of the test to execute.
+- test_package_arn (string): the ARN of the uploaded test package.
+- test_package_file (string): the path to a test package archive. Use either =test_package_arn= or =test_package_file=.
+- test_package_type (string): the type of the test package. For appium/python use =APPIUM_PYTHON_TEST_PACKAGE=
+- test_spec_arn (string): the ARN of the uploaded test specification.
+- test_spec_file (string): the path to a test spec file. Use either =test_spec_arn= or =test_spec_file=
+- test_spec_type (string): the type of the test specification. For appium/python use =APPIUM_PYTHON_TEST_SPEC=
+- cleanup (bool, optional, default: true): delete uploads in the cleanup handler. Set this to =false= to keep uploads.
+
+***** outputs
+- data (JSON): raw result returned by the API.
+- arn (string): the ARN of the scheduled test run.
+- parsingResultUrl (string): the URL containing parsing errors, if any. Note that this call may return before the API reports parse errors.
+- status (string): status of the test run. Typically it can be expected to get =SCHEDULING= here.
+- resultCode (string): result of the test run. For this call this will typically be empty.
+
+***** usage example
+This example pulls remote sources, and uploads them to a device farm before scheduling a run:
+
+#+BEGIN_SRC yaml
+- name: Schedule test run
+  uses: aardsoft/aws-devicefarm/test-application@v1
+  with:
+    name: run_with_uploads
+    project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+    device_pool_arn: ${{ secrets.AWS_DEVICE_POOL_ARN }}
+    app_file: https://aard.fi/dump/test_app.apk
+    app_type: ANDROID_APP
+    test_type: APPIUM_PYTHON
+    test_package_file: https://aard.fi/dump/test_bundle.zip
+    test_package_type: APPIUM_PYTHON_TEST_PACKAGE
+    test_spec_file: https://aard.fi/dump/test_spec.yaml
+    test_spec_type: APPIUM_PYTHON_TEST_SPEC
+    remote_src: true
+#+END_SRC
+
+** Setting up AWS
+*** Create a test project
+In the [[https://us-west-2.console.aws.amazon.com/devicefarm/home][Device Farm console]] create a new project, and copy the displayed ARN - this is the project ARN required by some actions. Next go to =Project settings=, =Device pools= and create a new pool. Retrieve the pool ARN using the [[https://docs.aws.amazon.com/cli/latest/reference/devicefarm/list-device-pools.html][list-device-pools]] CLI command, or using the list-device-pools action if AWS CLI is not set up.
+
+Secrets named AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEVICE_POOL_ARN and AWS_PROJECT_ARN or similar need to be set using the ARNs just created and account secrets.
+
+It is recommended to use a dedicated role user for devicefarm access. the AWS role to limit access to devicefarm only is =AWSDeviceFarmFullAccess=.
+
+** Development
+*** Local testing
+Local testing is possible to some extend using [[https://github.com/nektos/act][act]]. All secrets should be exported as environment variable, otherwise act will prompt for it:
+
+#+BEGIN_SRC bash
+$ act -s AWS_ACCESS_KEY_ID -s AWS_SECRET_ACCESS_KEY -s AWS_DEVICE_POOL_ARN -s AWS_PROJECT_ARN
+#+END_SRC

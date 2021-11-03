@@ -1,0 +1,150 @@
+on:
+  release:
+    types: [created]
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+name: Perform basic testing against a devicefarm
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-west-2
+
+    - name: Get project
+      uses: ./get-project
+      id: get-project
+      with:
+        project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+    - name: List device pools
+      uses: ./list-device-pools
+      id: list-device-pools
+      with:
+        project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+    - name: Get device pool details
+      uses: ./get-device-pool
+      id: get-device-pool
+      with:
+        device_pool_arn: ${{ secrets.AWS_DEVICE_POOL_ARN }}
+    - name: List uploads
+      uses: ./list-uploads
+      id: list-uploads
+      with:
+        project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+    - name: Print uploads
+      uses: ./pretty-print
+      with:
+        input: ${{ steps.list-uploads.outputs.data }}
+    - name: Create upload
+      uses: ./create-upload
+      id: create-upload-1
+      with:
+        project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+        name: test-via-action.yaml
+        type: APPIUM_PYTHON_TEST_SPEC
+    - name: Get upload details
+      uses: ./get-upload
+      id: get-upload
+      with:
+        resource_arn: ${{ steps.create-upload-1.outputs.arn }}
+    - name: Create upload 2
+      uses: ./create-upload
+      id: create-upload-2
+      with:
+        project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+        name: test-via-action.yaml
+        type: APPIUM_PYTHON_TEST_SPEC
+    - name: Delete previously created upload
+      uses: ./delete-upload
+      with:
+        resource_arn: ${{ steps.create-upload-1.outputs.arn }}
+    - name: Delete previously created upload
+      uses: ./delete-upload
+      with:
+        resource_arn: ${{ steps.create-upload-2.outputs.arn }}
+    - name: Upload remote test specification
+      uses: ./upload-file
+      id: test-spec
+      with:
+        project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+        file: https://aard.fi/dump/test_spec_pip.yaml
+        remote_src: true
+        type: APPIUM_PYTHON_TEST_SPEC
+    - name: Upload remote test bundle
+      uses: ./upload-file
+      id: test-bundle
+      with:
+        project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+        file: https://aard.fi/dump/test_bundle.zip
+        remote_src: true
+        type: APPIUM_PYTHON_TEST_PACKAGE
+    - name: Upload remote app
+      uses: ./upload-file
+      id: test-app
+      with:
+        project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+        file: https://aard.fi/dump/test_app.apk
+        remote_src: true
+        type: ANDROID_APP
+    - name: Schedule test run via API (non-blocking)
+      uses: ./schedule-run
+      with:
+        name: schedule_run
+        project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+        device_pool_arn: ${{ secrets.AWS_DEVICE_POOL_ARN }}
+        app_arn: ${{ steps.test-app.outputs.arn }}
+        test_type: APPIUM_PYTHON
+        test_package_arn: ${{ steps.test-bundle.outputs.arn }}
+        test_spec_arn: ${{ steps.test-spec.outputs.arn }}
+    - name: Schedule test run for previous uploads
+      uses: ./test-application
+      id: schedule-run
+      with:
+        name: run_with_uploaded_files
+        project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+        device_pool_arn: ${{ secrets.AWS_DEVICE_POOL_ARN }}
+        app_arn: ${{ steps.test-app.outputs.arn }}
+        test_type: APPIUM_PYTHON
+        test_package_arn: ${{ steps.test-bundle.outputs.arn }}
+        test_spec_arn: ${{ steps.test-spec.outputs.arn }}
+    - name: List runs
+      uses: ./list-runs
+      with:
+        project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+    - name: Get run details
+      uses: ./get-run
+      with:
+        run_arn: ${{ steps.schedule-run.outputs.arn }}
+    - name: List file artifacts for run
+      uses: ./list-artifacts
+      with:
+        resource_arn: ${{ steps.schedule-run.outputs.arn }}
+        type: FILE
+    - name: Schedule test run with uploads
+      uses: ./test-application
+      with:
+        name: run_with_uploads
+        project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+        device_pool_arn: ${{ secrets.AWS_DEVICE_POOL_ARN }}
+        app_file: https://aard.fi/dump/test_app.apk
+        app_type: ANDROID_APP
+        test_type: APPIUM_PYTHON
+        test_package_file: https://aard.fi/dump/test_bundle.zip
+        test_package_type: APPIUM_PYTHON_TEST_PACKAGE
+        test_spec_file: https://aard.fi/dump/test_spec.yaml
+        test_spec_type: APPIUM_PYTHON_TEST_SPEC
+        remote_src: true

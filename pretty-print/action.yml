@@ -1,0 +1,9 @@
+name: 'JSON prettify'
+description: 'Pretty print a JSON string'
+inputs:
+  input:
+    description: 'The JSON string'
+    required: true
+runs:
+  using: 'node12'
+  main: 'index.js'

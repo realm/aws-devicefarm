@@ -1,0 +1,15 @@
+name: 'API: List uploads'
+description: 'List device farm uploads'
+inputs:
+  resource_arn:
+    description: 'ARN of the resource to list artifacts for'
+    required: true
+  type:
+    description: 'The resource type to list'
+    required: true
+outputs:
+  data:
+    description: 'JSON data returned from the API'
+runs:
+  using: 'node12'
+  main: 'index.js'

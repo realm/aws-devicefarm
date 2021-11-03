@@ -1,0 +1,18 @@
+name: 'Get device pool'
+description: 'Get details for a device pool'
+inputs:
+  device_pool_arn:
+    description: 'ARN of the pool'
+    required: true
+outputs:
+  data:
+    description: 'JSON data returned from the API'
+  description:
+    description: 'Human friendly description of the pool'
+  name:
+    description: 'The pool name'
+  type:
+    description: 'The type of this pool, CURATED or PRIVATE'
+runs:
+  using: 'node12'
+  main: 'index.js'

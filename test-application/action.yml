@@ -1,0 +1,68 @@
+# This will upload all required files, schedule a run, and then wait for it to finish
+# It will not create a project or a device pool - those need to exist
+# devicefarm schedule-run --project-arn $aws_project_arn --app-arn $aws_app_arn --device-pool-arn $aws_device_pool_arn --name MyTestRun --test testSpecArn=$aws_test_spec_arn,type=APPIUM_PYTHON,testPackageArn=$aws_test_bundle_arn
+
+name: 'Start a testrun'
+description: 'Start a testrun, uploading files as necessary'
+inputs:
+  app_arn:
+    description: 'ARN of an existing upload to use as app'
+    required: false
+  app_file:
+    description: 'Full path to a file to upload and use as app'
+    required: false
+  app_type:
+    description: 'Type of the app file'
+    required: false
+  project_arn:
+    description: 'ARN of an existing device farm project'
+    required: true
+  device_pool_arn:
+    description: 'ARN of an existing device pool'
+    required: true
+  test_type:
+    description: 'Type of the test to schedule'
+    required: true
+  test_spec_arn:
+    description: 'ARN of an existing test specification'
+    required: false
+  test_spec_file:
+    description: 'Full path to a file to upload as test specification'
+    required: false
+  test_spec_type:
+    description: 'Type of the test specification'
+    required: false
+  test_package_arn:
+    description: 'ARN of an existing test package'
+    required: false
+  test_package_file:
+    description: 'Full path to a file to upload as test package'
+    required: false
+  test_package_type:
+    description: 'Type of the test package'
+    required: false
+  name:
+    description: 'Name of the testrun'
+    required: false
+  cleanup:
+    description: 'Remove uploads before exiting'
+    required: true
+    default: true
+  remote_src:
+    description: 'Try pulling files from http servers'
+    required: true
+    default: false
+outputs:
+  data:
+    description: 'JSON data returned from the API'
+  arn:
+    description: 'The ARN of the newly created upload'
+  parsing_result_url:
+    description: 'The URL containing potential parsing errors'
+  result_code:
+    description: 'The result (pass/fail) of the test run'
+  status:
+    description: 'The status of the newly created upload'
+runs:
+  using: 'node12'
+  main: 'index.js'

@@ -1,0 +1,27 @@
+{
+  "name": "aws-devicefarm",
+  "version": "1.0.0",
+  "description": "** Introduction",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aardsoft/aws-devicefarm.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/aardsoft/aws-devicefarm/issues"
+  },
+  "homepage": "https://github.com/aardsoft/aws-devicefarm#readme",
+  "dependencies": {
+    "@actions/core": "^1.6.0",
+    "@actions/github": "^5.0.0",
+    "aws-sdk": "^2.1039.0",
+    "axios": "^0.24.0",
+    "sleep-promise": "^9.1.0"
+  }
+}

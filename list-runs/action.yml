@@ -1,0 +1,12 @@
+name: 'API: List runs'
+description: 'List runs in a device farm project'
+inputs:
+  project_arn:
+    description: 'ARN of the device farm project'
+    required: true
+outputs:
+  data:
+    description: 'JSON data returned from the API'
+runs:
+  using: 'node12'
+  main: 'index.js'

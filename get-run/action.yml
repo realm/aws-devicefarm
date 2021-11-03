@@ -1,0 +1,16 @@
+name: 'Get run'
+description: 'Get details for a test run'
+inputs:
+  run_arn:
+    description: 'ARN of the run'
+    required: true
+outputs:
+  data:
+    description: 'JSON data returned from the API'
+  created:
+    description: 'The date this project was created'
+  name:
+    description: 'The project name'
+runs:
+  using: 'node12'
+  main: 'index.js'

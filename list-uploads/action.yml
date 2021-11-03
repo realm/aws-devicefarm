@@ -1,0 +1,12 @@
+name: 'API: List uploads'
+description: 'List device farm uploads'
+inputs:
+  project_arn:
+    description: 'ARN of the device farm project'
+    required: true
+outputs:
+  data:
+    description: 'JSON data returned from the API'
+runs:
+  using: 'node12'
+  main: 'index.js'

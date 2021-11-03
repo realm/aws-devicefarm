@@ -1,0 +1,12 @@
+name: 'Delete upload'
+description: 'Delete an upload from a devicefarm'
+inputs:
+  resource_arn:
+    description: 'ARN of an existing resource'
+    required: true
+outputs:
+  data:
+    description: 'JSON data returned from the API'
+runs:
+  using: 'node12'
+  main: 'index.js'

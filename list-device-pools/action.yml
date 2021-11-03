@@ -1,0 +1,16 @@
+name: 'API: List device pools'
+description: 'List device farm pools'
+inputs:
+  project_arn:
+    description: 'ARN of the device farm project'
+    required: true
+  type:
+    description: 'Type of the pool, PRIVATE or CURATED'
+    required: true
+    default: PRIVATE
+outputs:
+  data:
+    description: 'JSON data returned from the API'
+runs:
+  using: 'node12'
+  main: 'index.js'

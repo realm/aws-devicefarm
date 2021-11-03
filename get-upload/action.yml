@@ -1,0 +1,20 @@
+name: 'Get upload'
+description: 'Get details for a resource uploaded to a devicefarm'
+inputs:
+  resource_arn:
+    description: 'ARN of an existing resource'
+    required: true
+outputs:
+  data:
+    description: 'JSON data returned from the API'
+  created:
+    description: 'The date this upload was created'
+  metadata:
+    description: 'Additional metadata for this upload'
+  type:
+    description: 'The type of this upload'
+  status:
+    description: 'The upload status'
+runs:
+  using: 'node12'
+  main: 'index.js'
