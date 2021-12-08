@@ -391,7 +391,7 @@ This action creates a file upload and then uploads a file.
 - name (string, optional): the name of the file to create on AWS. The name of the actual file if missing.
 - file (string): the full path to the file to upload to AWS.
 - cleanup (bool, optional, default: true): delete uploads in the cleanup handler. Set this to =false= to keep uploads.
-- remote_src (bool, optional, default: true): try to retrieve files via http if not available locally.
+- remote_src (bool, optional, default: true): try to retrieve files via http if not available locally. A file is only downloaded if it doesn't exist yet.
 
 ***** outputs
 - data (JSON): raw result returned by the API.
