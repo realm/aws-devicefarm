@@ -362,7 +362,7 @@ Schedule a test run with resources uploaded to AWS already. This action returns 
 - result_code (string): result of the test run. For this call this will typically be empty.
 
 ***** documentation
-- [[https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DeviceFarm.html#scheduleRun-property][API]]
+- [[https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DeviceFarm.html#listUploads-property][API]]
 - [[https://docs.aws.amazon.com/cli/latest/reference/devicefarm/schedule-run.html][CLI]]
 
 ***** usage example
