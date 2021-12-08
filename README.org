@@ -345,6 +345,8 @@ The output can be referenced in following actions using the step ID:
 **** schedule-run
 Schedule a test run with resources uploaded to AWS already. This action returns directly after scheduling a run - this behaviour is useful to avoid blocking a workflow if other steps can still be executed, but requires later checking with =get-run= if the run has finished. For an action capable of uploading required files as well as blocking until a test run has finished see =test-application=.
 
+When called without a test specification the run will be triggered with the default test environment of the specified test type.
+
 ***** inputs
 - name (string, optional): a name used for the test run.
 - project_arn (string): the ARN of the device farm project.
@@ -413,6 +415,8 @@ This action creates a file upload and then uploads a file.
 
 **** test-application
 This action schedules a test run and waits for the result. It can either use already uploaded files, or upload local or remote files.
+
+When called without a test specification the run will be triggered with the default test environment of the specified test type.
 
 ***** inputs
 - name (string, optional): a name used for the test run.
