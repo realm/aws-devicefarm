@@ -100,6 +100,27 @@ jobs:
         file: https://aard.fi/dump/test_app.apk
         remote_src: true
         type: ANDROID_APP
+    - name: Create incomplete upload
+      uses: ./create-upload
+      id: incomplete-upload
+      with:
+        project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+        name: incomplete-app.apk
+        type: ANDROID_APP
+    # TODO: this should fail - check if we can abort if it passes
+    - name: Schedule test run with incomplete data
+      uses: ./test-application
+      continue-on-error: true
+      with:
+        project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+        device_pool_arn: ${{ secrets.AWS_DEVICE_POOL_ARN }}
+        app_arn: ${{ steps.incomplete-upload.outputs.arn }}
+        test_type: APPIUM_PYTHON
+        test_package_file: https://aard.fi/dump/test_bundle.zip
+        test_package_type: APPIUM_PYTHON_TEST_PACKAGE
+        test_spec_file: https://aard.fi/dump/test_spec.yaml
+        test_spec_type: APPIUM_PYTHON_TEST_SPEC
+        remote_src: true
     - name: Schedule test run via API (non-blocking)
       uses: ./schedule-run
       with:
