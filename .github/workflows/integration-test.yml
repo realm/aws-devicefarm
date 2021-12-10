@@ -163,6 +163,42 @@ jobs:
         test_package_file: ${{ env.python_2_bundle_url }}
         test_package_type: APPIUM_PYTHON_TEST_PACKAGE
         remote_src: true
+    - name: Schedule test run with inline test spec
+      uses: ./test-application
+      with:
+        name: inline-spec
+        project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+        device_pool_arn: ${{ secrets.AWS_DEVICE_POOL_ARN }}
+        app_arn: ${{ steps.test-app.outputs.arn }}
+        test_type: APPIUM_PYTHON
+        test_package_file: ${{ env.python3_bundle_url }}
+        test_package_type: APPIUM_PYTHON_TEST_PACKAGE
+        test_spec_file: inline_test_spec.yaml
+        test_spec_type: APPIUM_PYTHON_TEST_SPEC
+        test_spec: |
+          version: 0.1
+          phases:
+            install:
+              commands:
+                - export PYTHON_VERSION=3
+
+            pre_test:
+              commands:
+                - adb -s $DEVICEFARM_DEVICE_UDID shell pm grant fi.aardsoft.devicefarmsample android.permission.READ_EXTERNAL_STORAGE
+                - adb -s $DEVICEFARM_DEVICE_UDID shell pm grant fi.aardsoft.devicefarmsample android.permission.WRITE_EXTERNAL_STORAGE
+
+            test:
+              commands:
+                - adb -s $DEVICEFARM_DEVICE_UDID shell am instrument -w -r -e foo bar -e bar baz fi.aardsoft.devicefarmsample
+
+            post_test:
+              commands:
+                - adb -s $DEVICEFARM_DEVICE_UDID pull /storage/emulated/0/Android/data/fi.aardsoft.devicefarmsample/files/output.txt
+                - mv output.txt $DEVICEFARM_LOG_DIR/test-output.txt
+
+          artifacts:
+            - $DEVICEFARM_LOG_DIR
+        remote_src: false
     - name: Schedule test run via API (non-blocking)
       uses: ./schedule-run
       with:

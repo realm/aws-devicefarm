@@ -14,6 +14,7 @@ params.appType = core.getInput('app_type');
 
 params.testType = core.getInput('test_type');
 
+params.test_spec = core.getMultilineInput('test_spec');
 params.testSpecArn = core.getInput('test_spec_arn');
 params.testSpecFile = core.getInput('test_spec_file');
 params.testSpecType = core.getInput('test_spec_type');

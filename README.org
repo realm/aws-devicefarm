@@ -1,5 +1,8 @@
 * AWS devicefarm                                                      :TOC_4:
   - [[#introduction][Introduction]]
+    - [[#examples][Examples]]
+      - [[#example-with-remote-sources-and-artifact-pulling][Example with remote sources and artifact pulling]]
+      - [[#example-with-remote-sources-inline-test-specification-and-artifact-pulling][Example with remote sources, inline test specification and artifact pulling]]
   - [[#available-actions][Available actions]]
     - [[#api-wrappers][API wrappers]]
       - [[#create-upload][create-upload]]
@@ -34,8 +37,10 @@ Due to the nature of the application this was developed for the following restri
 
 Two types of actions are provided: Simple API wrappers - useful for debugging, testing or building workflows otherwise not properly supported - and complex actions, wrapping several API calls. Typically complex actions should be used, whenever possible.
 
-After adding secrets for AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEVICE_POOL_ARN and AWS_PROJECT_ARN (see AWS setup section below if no devicefarm is configured) the following workflow will create a test run with a mix of downloaded and local data, and wait for it to execute. Adjust =app_file=, =test_spec_file= and =test_package_file= before running it:
+*** Examples
+After adding secrets for AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEVICE_POOL_ARN and AWS_PROJECT_ARN (see AWS setup section below if no devicefarm is configured) the following workflow will create a test run with a mix of downloaded and local data, and wait for it to execute. You may want to adjust =app_file=, =test_spec_file= and =test_package_file= before running it - as shown it will pull demo data for the run:
 
+**** Example with remote sources and artifact pulling
 #+BEGIN_SRC
 on:
   push:
@@ -66,15 +71,89 @@ jobs:
       uses: aardsoft/aws-devicefarm/test-application@master
       with:
         name: schedule-run
+        file_artifacts: |
+          Test spec file.yml
+          Customer Artifacts.zip
         project_arn: ${{ secrets.AWS_PROJECT_ARN }}
         device_pool_arn: ${{ secrets.AWS_DEVICE_POOL_ARN }}
-        app_file: test_app_local.apk
+        app_file: https://github.com/aardsoft/aws-devicefarm-sample-data/releases/download/0.3/fi.aardsoft.devicefarmsample-debug.apk
         app_type: ANDROID_APP
         test_type: APPIUM_PYTHON
-        test_package_file: https://example.com/test_bundle.zip
+        test_package_file: https://github.com/aardsoft/aws-devicefarm-sample-data/releases/download/0.3/sample_env_python3.zip
         test_package_type: APPIUM_PYTHON_TEST_PACKAGE
-        test_spec_file: https://example.com/test_spec.yaml
+        test_spec_file: https://github.com/aardsoft/aws-devicefarm-sample-data/releases/download/0.3/test_spec.yaml
         test_spec_type: APPIUM_PYTHON_TEST_SPEC
+        remote_src: true
+#+END_SRC
+
+**** Example with remote sources, inline test specification and artifact pulling
+It is also possible to have the test specification inline:
+
+#+BEGIN_SRC
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+name: Test application on device farm
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-west-2
+
+    - name: Schedule test run with mixed data
+      uses: aardsoft/aws-devicefarm/test-application@master
+      with:
+        name: schedule-run-inline
+        file_artifacts: |
+          Test spec file.yml
+          Customer Artifacts.zip
+        project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+        device_pool_arn: ${{ secrets.AWS_DEVICE_POOL_ARN }}
+        app_file: https://github.com/aardsoft/aws-devicefarm-sample-data/releases/download/0.3/fi.aardsoft.devicefarmsample-debug.apk
+        app_type: ANDROID_APP
+        test_type: APPIUM_PYTHON
+        test_package_file: https://github.com/aardsoft/aws-devicefarm-sample-data/releases/download/0.3/sample_env_python3.zip
+        test_package_type: APPIUM_PYTHON_TEST_PACKAGE
+        test_spec_file: test_spec.yaml
+        test_spec_type: APPIUM_PYTHON_TEST_SPEC
+        test_spec: |
+          version: 0.1
+          phases:
+            install:
+              commands:
+                - export PYTHON_VERSION=3
+
+            pre_test:
+              commands:
+                - adb -s $DEVICEFARM_DEVICE_UDID shell pm grant fi.aardsoft.devicefarmsample android.permission.READ_EXTERNAL_STORAGE
+                - adb -s $DEVICEFARM_DEVICE_UDID shell pm grant fi.aardsoft.devicefarmsample android.permission.WRITE_EXTERNAL_STORAGE
+
+            test:
+              commands:
+                - adb -s $DEVICEFARM_DEVICE_UDID shell am instrument -w -r -e foo bar -e bar baz fi.aardsoft.devicefarmsample
+
+            post_test:
+              commands:
+                - adb -s $DEVICEFARM_DEVICE_UDID pull /storage/emulated/0/Android/data/fi.aardsoft.devicefarmsample/files/output.txt
+                - mv output.txt $DEVICEFARM_LOG_DIR/test-output.txt
+
+          artifacts:
+            - $DEVICEFARM_LOG_DIR
         remote_src: true
 #+END_SRC
 
@@ -453,7 +532,7 @@ This action creates a file upload and then uploads a file.
   id: test-bundle
   with:
     project_arn: ${{ secrets.AWS_PROJECT_ARN }}
-    file: https://aard.fi/dump/test_bundle.zip
+    file: https://github.com/aardsoft/aws-devicefarm-sample-data/releases/download/0.3/test_spec.yaml
     remote_src: true
     type: APPIUM_PYTHON_TEST_PACKAGE
 #+END_SRC
@@ -474,6 +553,7 @@ When called without a test specification the run will be triggered with the defa
 - test_package_arn (string): the ARN of the uploaded test package.
 - test_package_file (string): the path to a test package archive. Use either =test_package_arn= or =test_package_file=.
 - test_package_type (string): the type of the test package. For appium/python use =APPIUM_PYTHON_TEST_PACKAGE=
+- test_spec (multiline string): inline YAML for the test specification. See the example at the top.
 - test_spec_arn (string): the ARN of the uploaded test specification.
 - test_spec_file (string): the path to a test spec file. Use either =test_spec_arn= or =test_spec_file=
 - test_spec_type (string): the type of the test specification. For appium/python use =APPIUM_PYTHON_TEST_SPEC=
@@ -499,12 +579,12 @@ This example pulls remote sources, and uploads them to a device farm before sche
     name: run_with_uploads
     project_arn: ${{ secrets.AWS_PROJECT_ARN }}
     device_pool_arn: ${{ secrets.AWS_DEVICE_POOL_ARN }}
-    app_file: https://aard.fi/dump/test_app.apk
+    app_file: https://github.com/aardsoft/aws-devicefarm-sample-data/releases/download/0.3/fi.aardsoft.devicefarmsample-debug.apk
     app_type: ANDROID_APP
     test_type: APPIUM_PYTHON
-    test_package_file: https://aard.fi/dump/test_bundle.zip
+    test_package_file: https://github.com/aardsoft/aws-devicefarm-sample-data/releases/download/0.3/sample_env_python3.zip
     test_package_type: APPIUM_PYTHON_TEST_PACKAGE
-    test_spec_file: https://aard.fi/dump/test_spec.yaml
+    test_spec_file: https://github.com/aardsoft/aws-devicefarm-sample-data/releases/download/0.3/test_spec.yaml
     test_spec_type: APPIUM_PYTHON_TEST_SPEC
     remote_src: true
 #+END_SRC
