@@ -14,6 +14,7 @@
       - [[#list-uploads][list-uploads]]
       - [[#schedule-run][schedule-run]]
     - [[#complex-actions][Complex actions]]
+      - [[#download-artifacts][download-artifacts]]
       - [[#upload-file][upload-file]]
       - [[#test-application][test-application]]
   - [[#setting-up-aws][Setting up AWS]]
@@ -384,6 +385,48 @@ This example references ARNs obtained from previous upload steps:
 #+END_SRC
 
 *** Complex actions
+**** download-artifacts
+This action downloads one or more artifacts from a test run. Trying to download a non-existent artifact will log a warning and omit the file frem the output, but not abort.
+
+***** inputs
+- run_arn (string): the ARN of the test run
+- file_artifacts (multiline string, optional): file names - including extension - of type =FILE= to pull.
+- log_artifacts (multiline string, optional): file names - including extension - of type =LOG= to pull.
+- screenshot_artifacts (multiline string, optional): file names - including extension - of type =SCREENSHOT= to pull.
+
+***** outputs
+- data (JSON): an array containing the downloaded files for each of the three available categories.
+
+***** usage example
+
+This assumes the run with id =schedule-run= created customer artifacts:
+
+#+BEGIN_SRC yaml
+- name: Download artifacts
+  uses: aardsoft/aws-devicefarm/download-artifacts@v1
+  with:
+    run_arn: ${{ steps.schedule-run.outputs.arn }}
+    file_artifacts: |
+      Test spec file.yml
+      Invalid Artifact Logging Warning.txt
+      Customer Artifacts.zip
+#+END_SRC
+
+The returned JSON looks like this - note the missing invalid file:
+
+#+BEGIN_SRC js
+{
+    "FILE": [
+        "Test spec file.yml",
+        "Customer Artifacts.zip"
+    ],
+    "SCREENSHOT": [
+    ],
+    "LOG": [
+    ]
+}
+#+END_SRC
+
 **** upload-file
 This action creates a file upload and then uploads a file.
 

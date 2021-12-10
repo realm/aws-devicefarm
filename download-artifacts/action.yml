@@ -1,0 +1,21 @@
+name: 'Download artifacts'
+description: 'Downloads artifacts after a test run'
+inputs:
+  run_arn:
+    description: 'ARN of the run to pull artifacts for'
+    required: true
+  file_artifacts:
+    description: 'Artifacts of type FILE to download, one per line'
+    required: false
+  screenshot_artifacts:
+    description: 'Artifacts of type SCREENSHOT to download, one per line'
+    required: false
+  log_artifacts:
+    description: 'Artifacts of type LOG to download, one per line'
+    required: false
+outputs:
+  data:
+    description: 'JSON data returned from the API'
+runs:
+  using: 'node12'
+  main: 'index.js'

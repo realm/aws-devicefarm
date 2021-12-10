@@ -24,7 +24,6 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-west-2
-
     - name: Get project
       uses: ./get-project
       id: get-project
@@ -168,6 +167,18 @@ jobs:
       with:
         resource_arn: ${{ steps.schedule-run.outputs.arn }}
         type: FILE
+    - name: Download artifacts for run
+      uses: ./download-artifacts
+      with:
+        run_arn: ${{ steps.schedule-run.outputs.arn }}
+        file_artifacts: |
+          Test spec file.yml
+          Invalid Artifact Logging Warning.txt
+          Customer Artifacts.zip
+    - name: Print downloaded test description
+      run: |
+        cat 'Test spec file.yml'
+        unzip -l 'Customer Artifacts.zip'
     - name: Schedule test run with uploads
       uses: ./test-application
       with:
