@@ -61,7 +61,10 @@ jobs:
       id: list-uploads
       with:
         project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+    # this fails with too many artifacts due to missing cleanup handlers. Only
+    # nice to have anyway, so ignore errors.
     - name: Print uploads
+      continue-on-error: true
       uses: ./pretty-print
       with:
         input: ${{ steps.list-uploads.outputs.data }}
