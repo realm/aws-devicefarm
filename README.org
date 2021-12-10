@@ -477,10 +477,13 @@ When called without a test specification the run will be triggered with the defa
 - test_spec_arn (string): the ARN of the uploaded test specification.
 - test_spec_file (string): the path to a test spec file. Use either =test_spec_arn= or =test_spec_file=
 - test_spec_type (string): the type of the test specification. For appium/python use =APPIUM_PYTHON_TEST_SPEC=
+- file_artifacts (multiline string, optional): file names - including extension - of type =FILE= to pull.
+- log_artifacts (multiline string, optional): file names - including extension - of type =LOG= to pull.
+- screenshot_artifacts (multiline string, optional): file names - including extension - of type =SCREENSHOT= to pull.
 - cleanup (bool, optional, default: true): delete uploads in the cleanup handler. Set this to =false= to keep uploads.
 
 ***** outputs
-- data (JSON): raw result returned by the API.
+- data (JSON): raw result returned by the API. The additional field =downloaded_artifacts= contains successfully pulled artifacts.
 - arn (string): the ARN of the scheduled test run.
 - parsingResultUrl (string): the URL containing parsing errors, if any. Note that this call may return before the API reports parse errors.
 - status (string): status of the test run. Typically it can be expected to get =SCHEDULING= here.

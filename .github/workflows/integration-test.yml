@@ -205,10 +205,11 @@ jobs:
           Test spec file.yml
           Invalid Artifact Logging Warning.txt
           Customer Artifacts.zip
-    - name: Print downloaded test description
+    - name: Print and clean downloaded artifacts
       run: |
         cat 'Test spec file.yml'
         unzip -l 'Customer Artifacts.zip'
+        rm -f 'Test spec file.yml' 'Customer Artifacts.zip'
     - name: Schedule test run with uploads
       uses: ./test-application
       with:
@@ -223,3 +224,12 @@ jobs:
         test_spec_file: ${{ env.test_spec_url }}
         test_spec_type: APPIUM_PYTHON_TEST_SPEC
         remote_src: true
+        file_artifacts: |
+          Test spec file.yml
+          Invalid Artifact Logging Warning.txt
+          Customer Artifacts.zip
+    - name: Print and clean downloaded artifacts
+      run: |
+        cat 'Test spec file.yml'
+        unzip -l 'Customer Artifacts.zip'
+        rm -f 'Test spec file.yml' 'Customer Artifacts.zip'

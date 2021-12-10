@@ -29,6 +29,10 @@ params.name = core.getInput('name');
 params.remote_src = core.getInput('remote_src');
 params.cleanup = core.getInput('cleanup');
 
+params.file_artifacts = core.getMultilineInput('file_artifacts');
+params.log_artifacts = core.getMultilineInput('log_artifacts');
+params.screenshot_artifacts = core.getMultilineInput('screenshot_artifacts');
+
 if (!devicefarm.validateParameters(params,
                                    {devicePoolArn: 'device_pool_arn',
                                     projectArn: 'project_arn'})) {

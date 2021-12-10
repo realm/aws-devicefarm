@@ -52,6 +52,15 @@ inputs:
     description: 'Try pulling files from http servers'
     required: true
     default: false
+  file_artifacts:
+    description: 'Artifacts of type FILE to download, one per line'
+    required: false
+  screenshot_artifacts:
+    description: 'Artifacts of type SCREENSHOT to download, one per line'
+    required: false
+  log_artifacts:
+    description: 'Artifacts of type LOG to download, one per line'
+    required: false
 outputs:
   data:
     description: 'JSON data returned from the API'
