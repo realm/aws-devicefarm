@@ -30,6 +30,8 @@ Due to the nature of the application this was developed for the following restri
 1. The application contains the test definitions in the application binary. As AWS always expects a separate test definition a dummy test definition is provided in =sample-venv/tests=. Applications wanting to use the AWS testdefinitions should still work without problem, as long as the correct files are uploaded / correct ARNs specified. This has not been tested, though.
 2. Test results are evaluated on Github side based on files pulled from the device. Support for tests/suites an AWS is not implemented. Adding support for those APIs should be trivial, if needed. Patches are welcome.
 
+[[https://github.com/aardsoft/aws-devicefarm-sample-data][Sample test data and applications]] simulating this case are provided in a separate repository.
+
 Two types of actions are provided: Simple API wrappers - useful for debugging, testing or building workflows otherwise not properly supported - and complex actions, wrapping several API calls. Typically complex actions should be used, whenever possible.
 
 After adding secrets for AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEVICE_POOL_ARN and AWS_PROJECT_ARN (see AWS setup section below if no devicefarm is configured) the following workflow will create a test run with a mix of downloaded and local data, and wait for it to execute. Adjust =app_file=, =test_spec_file= and =test_package_file= before running it:

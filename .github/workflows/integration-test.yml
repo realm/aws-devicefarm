@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [ master ]
 
+env:
+  python2_bundle_url: https://github.com/aardsoft/aws-devicefarm-sample-data/releases/download/0.3/sample_env_python2_wh.zip
+  python3_bundle_url: https://github.com/aardsoft/aws-devicefarm-sample-data/releases/download/0.3/sample_env_python3.zip
+  test_spec_url: https://github.com/aardsoft/aws-devicefarm-sample-data/releases/download/0.3/test_spec.yaml
+  test_app_url: https://github.com/aardsoft/aws-devicefarm-sample-data/releases/download/0.3/fi.aardsoft.devicefarmsample-debug.apk
+
+
 name: Perform basic testing against a devicefarm
 
 jobs:
@@ -17,6 +24,16 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+
+    - name: Install additional packages
+      run: |
+        if [ `id -u` -eq 0 ]; then
+          apt-get update
+          apt-get install -y zip unzip
+        else
+          sudo apt-get update
+          sudo apt-get install -y zip unzip
+        fi
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
@@ -80,7 +97,7 @@ jobs:
       id: test-spec
       with:
         project_arn: ${{ secrets.AWS_PROJECT_ARN }}
-        file: https://aard.fi/dump/test_spec_pip.yaml
+        file: ${{ env.test_spec_url }}
         remote_src: true
         type: APPIUM_PYTHON_TEST_SPEC
     - name: Upload remote test bundle
@@ -88,7 +105,7 @@ jobs:
       id: test-bundle
       with:
         project_arn: ${{ secrets.AWS_PROJECT_ARN }}
-        file: https://aard.fi/dump/test_bundle.zip
+        file: ${{ env.python3_bundle_url }}
         remote_src: true
         type: APPIUM_PYTHON_TEST_PACKAGE
     - name: Upload remote app
@@ -96,7 +113,7 @@ jobs:
       id: test-app
       with:
         project_arn: ${{ secrets.AWS_PROJECT_ARN }}
-        file: https://aard.fi/dump/test_app.apk
+        file: ${{ env.test_app_url }}
         remote_src: true
         type: ANDROID_APP
     - name: Create incomplete upload
@@ -115,9 +132,9 @@ jobs:
         device_pool_arn: ${{ secrets.AWS_DEVICE_POOL_ARN }}
         app_arn: ${{ steps.incomplete-upload.outputs.arn }}
         test_type: APPIUM_PYTHON
-        test_package_file: https://aard.fi/dump/test_bundle.zip
+        test_package_file: ${{ env.python3_bundle_url }}
         test_package_type: APPIUM_PYTHON_TEST_PACKAGE
-        test_spec_file: https://aard.fi/dump/test_spec.yaml
+        test_spec_file: ${{ env.test_spec_url }}
         test_spec_type: APPIUM_PYTHON_TEST_SPEC
         remote_src: true
     # this also is expected to fail due to AWS still defaulting to python2.7,
@@ -130,7 +147,20 @@ jobs:
         device_pool_arn: ${{ secrets.AWS_DEVICE_POOL_ARN }}
         app_arn: ${{ steps.test-app.outputs.arn }}
         test_type: APPIUM_PYTHON
-        test_package_file: https://aard.fi/dump/test_bundle.zip
+        test_package_file: ${{ env.python3_bundle_url }}
+        test_package_type: APPIUM_PYTHON_TEST_PACKAGE
+        remote_src: true
+    # this requires a bundle with wheelhouse. It fails without getting real
+    # appium tests.
+    - name: Schedule python2 test run without custom test spec
+      continue-on-error: true
+      uses: ./test-application
+      with:
+        project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+        device_pool_arn: ${{ secrets.AWS_DEVICE_POOL_ARN }}
+        app_arn: ${{ steps.test-app.outputs.arn }}
+        test_type: APPIUM_PYTHON
+        test_package_file: ${{ env.python_2_bundle_url }}
         test_package_type: APPIUM_PYTHON_TEST_PACKAGE
         remote_src: true
     - name: Schedule test run via API (non-blocking)
@@ -185,11 +215,11 @@ jobs:
         name: run_with_uploads
         project_arn: ${{ secrets.AWS_PROJECT_ARN }}
         device_pool_arn: ${{ secrets.AWS_DEVICE_POOL_ARN }}
-        app_file: https://aard.fi/dump/test_app.apk
+        app_file: ${{ env.test_app_url }}
         app_type: ANDROID_APP
         test_type: APPIUM_PYTHON
-        test_package_file: https://aard.fi/dump/test_bundle.zip
+        test_package_file: ${{ env.python3_bundle_url }}
         test_package_type: APPIUM_PYTHON_TEST_PACKAGE
-        test_spec_file: https://aard.fi/dump/test_spec.yaml
+        test_spec_file: ${{ env.test_spec_url }}
         test_spec_type: APPIUM_PYTHON_TEST_SPEC
         remote_src: true
