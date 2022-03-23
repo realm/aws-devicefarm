@@ -8,15 +8,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aardsoft/aws-devicefarm.git"
+    "url": "git+https://github.com/realm/aws-devicefarm.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/aardsoft/aws-devicefarm/issues"
+    "url": "https://github.com/realm/aws-devicefarm/issues"
   },
-  "homepage": "https://github.com/aardsoft/aws-devicefarm#readme",
+  "homepage": "https://github.com/realm/aws-devicefarm#readme",
   "dependencies": {
     "@actions/core": "^1.6.0",
     "@actions/github": "^5.0.0",
