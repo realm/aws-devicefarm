@@ -32,6 +32,9 @@ inputs:
   test_spec_type:
     description: 'Type of the test specification'
     required: false
+  test_spec:
+    description: 'Inline test specification in YAML'
+    required: false
   test_package_arn:
     description: 'ARN of an existing test package'
     required: false
