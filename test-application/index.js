@@ -12,6 +12,8 @@ params.appArn = core.getInput('app_arn');
 params.appFile = core.getInput('app_file');
 params.appType = core.getInput('app_type');
 
+params.timeout = core.getInput('timeout');
+
 params.testType = core.getInput('test_type');
 
 params.test_spec = core.getMultilineInput('test_spec');

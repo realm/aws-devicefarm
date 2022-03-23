@@ -166,6 +166,20 @@ jobs:
         test_package_file: ${{ env.python_2_bundle_url }}
         test_package_type: APPIUM_PYTHON_TEST_PACKAGE
         remote_src: true
+    # this should fail due to the short timeout
+    - name: Schedule test run for previous uploads, short timeout
+      uses: ./test-application
+      continue-on-error: true
+      id: schedule-run-timeout
+      with:
+        name: run_with_uploaded_files_and_timeout
+        project_arn: ${{ secrets.AWS_PROJECT_ARN }}
+        device_pool_arn: ${{ secrets.AWS_DEVICE_POOL_ARN }}
+        app_arn: ${{ steps.test-app.outputs.arn }}
+        test_type: APPIUM_PYTHON
+        test_package_arn: ${{ steps.test-bundle.outputs.arn }}
+        test_spec_arn: ${{ steps.test-spec.outputs.arn }}
+        timeout: 30
     - name: Schedule test run with inline test spec
       uses: ./test-application
       with:

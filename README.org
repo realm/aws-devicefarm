@@ -561,6 +561,7 @@ When called without a test specification the run will be triggered with the defa
 - log_artifacts (multiline string, optional): file names - including extension - of type =LOG= to pull.
 - screenshot_artifacts (multiline string, optional): file names - including extension - of type =SCREENSHOT= to pull.
 - cleanup (bool, optional, default: true): delete uploads in the cleanup handler. Set this to =false= to keep uploads.
+- timeout (int, optional, default: 1800): maximum duration of a run on the device farm in seconds before it is considered failed.
 
 ***** outputs
 - data (JSON): raw result returned by the API. The additional field =downloaded_artifacts= contains successfully pulled artifacts.
