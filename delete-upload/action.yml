@@ -9,4 +9,4 @@ outputs:
     description: 'JSON data returned from the API'
 runs:
   using: 'node16'
-  main: 'index.js'
+  main: 'dist/index.js'

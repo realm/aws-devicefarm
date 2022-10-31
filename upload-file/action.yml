@@ -32,4 +32,4 @@ outputs:
     description: 'The status of the newly created upload'
 runs:
   using: 'node16'
-  main: 'index.js'
+  main: 'dist/index.js'

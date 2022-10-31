@@ -15,4 +15,4 @@ outputs:
     description: 'The type of this pool, CURATED or PRIVATE'
 runs:
   using: 'node16'
-  main: 'index.js'
+  main: 'dist/index.js'

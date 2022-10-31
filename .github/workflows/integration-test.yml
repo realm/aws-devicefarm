@@ -16,10 +16,39 @@ env:
 name: Perform basic testing against a devicefarm
 
 jobs:
+  package:
+    name: Package
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Setup Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run package
+      run: npm run package
+
+    - name: Validate there are no uncommitted changes
+      run: |
+        changedFiles=$(git --no-pager diff -w)
+        if [ "$changedFiles" ]; then
+          git --no-pager diff -w
+          exit 1
+        fi
+      shell: bash
+
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
     environment: production
+    needs:
+    - package
 
     steps:
     - name: Checkout
