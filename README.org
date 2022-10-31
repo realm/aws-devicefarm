@@ -605,3 +605,4 @@ Local testing is possible to some extend using [[https://github.com/nektos/act][
 #+BEGIN_SRC bash
 $ act -s AWS_ACCESS_KEY_ID -s AWS_SECRET_ACCESS_KEY -s AWS_DEVICE_POOL_ARN -s AWS_PROJECT_ARN
 #+END_SRC
+
