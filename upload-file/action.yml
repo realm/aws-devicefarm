@@ -31,5 +31,5 @@ outputs:
   status:
     description: 'The status of the newly created upload'
 runs:
-  using: 'node12'
+  using: 'node16'
   main: 'index.js'
