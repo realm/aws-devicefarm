@@ -18,8 +18,8 @@
   },
   "homepage": "https://github.com/realm/aws-devicefarm#readme",
   "dependencies": {
-    "@actions/core": "^1.6.0",
-    "@actions/github": "^5.0.0",
+    "@actions/core": "^1.10.0",
+    "@actions/github": "^5.1.1",
     "aws-sdk": "^2.1039.0",
     "axios": "^0.24.0",
     "sleep-promise": "^9.1.0"
