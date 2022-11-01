@@ -16,5 +16,5 @@ outputs:
   status:
     description: 'The upload status'
 runs:
-  using: 'node12'
-  main: 'index.js'
+  using: 'node16'
+  main: 'dist/index.js'

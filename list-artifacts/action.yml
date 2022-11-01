@@ -11,5 +11,5 @@ outputs:
   data:
     description: 'JSON data returned from the API'
 runs:
-  using: 'node12'
-  main: 'index.js'
+  using: 'node16'
+  main: 'dist/index.js'

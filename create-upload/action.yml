@@ -24,6 +24,6 @@ outputs:
   status:
     description: 'The status of the newly created upload'
 runs:
-  using: 'node12'
-  main: 'index.js'
-  post: 'cleanup.js'
+  using: 'node16'
+  main: 'dist/index.js'
+  post: 'dist/cleanup.js'
