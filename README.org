@@ -23,6 +23,7 @@
   - [[#setting-up-aws][Setting up AWS]]
     - [[#create-a-test-project][Create a test project]]
   - [[#development][Development]]
+    - [[#contributing][Contributing]]
     - [[#local-testing][Local testing]]
 
 ** Introduction
@@ -599,6 +600,44 @@ Secrets named AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEVICE_POOL_ARN and 
 It is recommended to use a dedicated role user for devicefarm access. the AWS role to limit access to devicefarm only is =AWSDeviceFarmFullAccess=.
 
 ** Development
+*** Contributing
+A pull request should also include build results, built with the [[https://github.com/realm/aws-devicefarm/blob/master/.github/workflows/integration-test.yml#L29][same node version as used in CI]] (at the time of writing this: 16):
+
+#+BEGIN_SRC bash
+$ npm ci
+[...]
+$  npm run package
+
+> aws-devicefarm@1.0.0 package
+> node tools/build.js
+
+Building create-upload
+[...]
+#+END_SRC
+
+[[https://github.com/nvm-sh/nvm][nvm]] is an easy way to add additional node versions to the local machine. After following the instructions there:
+
+
+#+BEGIN_SRC bash
+$ nvm install 16
+Downloading and installing node v16.20.2...
+Downloading https://nodejs.org/dist/v16.20.2/node-v16.20.2-linux-x64.tar.xz...
+--2023-10-02 12:00:42--  https://nodejs.org/dist/v16.20.2/node-v16.20.2-linux-x64.tar.xz
+Resolving nodejs.org (nodejs.org)... 104.20.22.46, 104.20.23.46, 2606:4700:10::6814:162e, ...
+Connecting to nodejs.org (nodejs.org)|104.20.22.46|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 22556484 (22M) [application/x-xz]
+Saving to: ‘/home/user/.nvm/.cache/bin/node-v16.20.2-linux-x64/node-v16.20.2-linux-x64.tar.xz’
+
+/home/user/.nvm/.cache 100%[======================================>]  21.51M  2.70MB/s    in 8.0s
+
+2023-10-02 12:00:50 (2.71 MB/s) - ‘/home/user/.nvm/.cache/bin/node-v16.20.2-linux-x64/node-v16.20.2-linux-x64.tar.xz’ saved [22556484/22556484]
+
+Computing checksum with sha256sum
+Checksums matched!
+Now using node v16.20.2 (npm v8.19.4)
+#+END_SRC
+
 *** Local testing
 Local testing is possible to some extend using [[https://github.com/nektos/act][act]]. All secrets should be exported as environment variable, otherwise act will prompt for it:
 
