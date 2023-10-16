@@ -3,7 +3,7 @@ on:
     types: [created]
   push:
     branches: [ master ]
-  pull_request:
+  pull_request_target:
     branches: [ master ]
 
 env:
@@ -46,7 +46,7 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    environment: production
+    environment: pull-request
     needs:
     - package
 
