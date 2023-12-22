@@ -10,6 +10,7 @@ params.name = core.getInput('name');
 
 params.appArn = core.getInput('app_arn');
 params.appFile = core.getInput('app_file');
+params.auxiliaryApps = core.getInput('app_auxiliary_files');
 params.appType = core.getInput('app_type');
 
 params.timeout = core.getInput('timeout');

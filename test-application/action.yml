@@ -11,6 +11,9 @@ inputs:
   app_file:
     description: 'Full path to a file to upload and use as app'
     required: false
+  app_auxiliary_files:
+    description: 'Full path to an auxiliary files to upload'
+    required: false  
   app_type:
     description: 'Type of the app file'
     required: false
